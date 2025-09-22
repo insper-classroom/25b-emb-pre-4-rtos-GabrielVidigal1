@@ -13,7 +13,6 @@ const int BTN_PIN_Y = 21;
 const int LED_PIN_R = 5;
 const int LED_PIN_Y = 10;
 
-
 QueueHandle_t xQueueBtn;
 SemaphoreHandle_t xSemaphoreLedR;
 SemaphoreHandle_t xSemaphoreLedY;
@@ -84,16 +83,23 @@ void btn_handler_task(void *p) {
 int main() {
     stdio_init_all();
 
-    gpio_set_irq_enabled_with_callback(BTN_PIN_R, GPIO_IRQ_EDGE_FALL, true, &btn_callback);
-    gpio_set_irq_enabled_with_callback(BTN_PIN_Y, GPIO_IRQ_EDGE_FALL, true, &btn_callback);
-    
+    // --- SEQUÊNCIA DE INICIALIZAÇÃO CORRIGIDA ---
+
+    // Configura o botão VERMELHO
     gpio_init(BTN_PIN_R);
     gpio_set_dir(BTN_PIN_R, GPIO_IN);
     gpio_pull_up(BTN_PIN_R);
     
+    // Configura o botão AMARELO
     gpio_init(BTN_PIN_Y);
     gpio_set_dir(BTN_PIN_Y, GPIO_IN);
     gpio_pull_up(BTN_PIN_Y);
+
+    // Habilita as interrupções para os dois pinos APÓS a configuração
+    gpio_set_irq_enabled_with_callback(BTN_PIN_R, GPIO_IRQ_EDGE_FALL, true, &btn_callback);
+    gpio_set_irq_enabled_with_callback(BTN_PIN_Y, GPIO_IRQ_EDGE_FALL, true, &btn_callback);
+    
+    // --- FIM DA CORREÇÃO ---
 
     xSemaphoreLedR = xSemaphoreCreateBinary();
     xSemaphoreLedY = xSemaphoreCreateBinary();
