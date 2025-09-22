@@ -79,30 +79,39 @@ void led_handler_task(void *p) {
     led_command_t received_cmd;
 
     while (true) {
-        if (xQueueReceive(xQueueCommands, &received_cmd, pdMS_TO_TICKS(10))) {
+        if (xQueueReceive(xQueueCommands, &received_cmd, 0)) {
             if (received_cmd.led_pin == LED_PIN_R) {
                 r_is_blinking = received_cmd.status;
+                if (!r_is_blinking) {
+                    gpio_put(LED_PIN_R, 0);
+                }
             } else if (received_cmd.led_pin == LED_PIN_Y) {
                 y_is_blinking = received_cmd.status;
+                if (!y_is_blinking) {
+                    gpio_put(LED_PIN_Y, 0);
+                }
             }
         }
 
+       
         if (r_is_blinking) {
             gpio_put(LED_PIN_R, 1);
-        } else {
-            gpio_put(LED_PIN_R, 0);
         }
-
         if (y_is_blinking) {
             gpio_put(LED_PIN_Y, 1);
-        } else {
+        }
+        
+        vTaskDelay(pdMS_TO_TICKS(100));
+
+        
+        if (r_is_blinking) {
+            gpio_put(LED_PIN_R, 0);
+        }
+        if (y_is_blinking) {
             gpio_put(LED_PIN_Y, 0);
         }
         
-        vTaskDelay(pdMS_TO_TICKS(250));
-        gpio_put(LED_PIN_R, 0);
-        gpio_put(LED_PIN_Y, 0);
-        vTaskDelay(pdMS_TO_TICKS(250));
+        vTaskDelay(pdMS_TO_TICKS(100));
     }
 }
 
