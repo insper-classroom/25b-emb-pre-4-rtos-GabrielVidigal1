@@ -26,19 +26,33 @@ const int LED_PIN_Y = 10;
 QueueHandle_t xQueueButId;
 QueueHandle_t xQueueButId2;
 
+SemaphoreHandle_t xSemaphore_r;
+SemaphoreHandle_t xSemaphore_y;
+
+
+
+
+void btn_callback(uint gpio, uint32_t events) {
+    if (events == 0x4 ) { // fall edge
+        if (gpio==BTN_PIN_R){
+            xSemaphoreGiveFromISR(xSemaphore_r, 0);
+        } else if (gpio == BTN_PIN_Y) {
+            xSemaphoreGiveFromISR(xSemaphore_y, 0);
+        }
+    }
+}
+
 
 void btn_1_task(void *p) {
     gpio_init(BTN_PIN_R);
     gpio_set_dir(BTN_PIN_R, GPIO_IN);
     gpio_pull_up(BTN_PIN_R);
+    gpio_set_irq_enabled_with_callback(BTN_PIN_R, GPIO_IRQ_EDGE_FALL, true,
+                                       &btn_callback);
 
     int ligado_desligado = 0;
     while (true) {
-        if (!gpio_get(BTN_PIN_R)) {
-
-            while (!gpio_get(BTN_PIN_R)) {
-                vTaskDelay(pdMS_TO_TICKS(1));
-            }
+        if (xSemaphoreTake(xSemaphore_r, pdMS_TO_TICKS(500)) == pdTRUE) {
 
             //printf("delay btn %d \n");
             ligado_desligado= !ligado_desligado;
@@ -80,14 +94,13 @@ void btn_2_task(void *p) {
     gpio_init(BTN_PIN_Y);
     gpio_set_dir(BTN_PIN_Y, GPIO_IN);
     gpio_pull_up(BTN_PIN_Y);
-
+    gpio_set_irq_enabled_with_callback(BTN_PIN_Y, GPIO_IRQ_EDGE_FALL, true,
+                                       &btn_callback);
     int ligado_desligado = 0;
     while (true) {
-        if (!gpio_get(BTN_PIN_Y)) {
+        if (xSemaphoreTake(xSemaphore_y, pdMS_TO_TICKS(500)) == pdTRUE) {
 
-            while (!gpio_get(BTN_PIN_Y)) {
-                vTaskDelay(pdMS_TO_TICKS(1));
-            }
+            
 
             //printf("delay btn %d \n");
             ligado_desligado= !ligado_desligado;
@@ -124,6 +137,9 @@ void led_2_task(void *p) {
 
 int main() {
     stdio_init_all();
+    xSemaphore_r = xSemaphoreCreateBinary();
+    xSemaphore_y = xSemaphoreCreateBinary();
+
     xQueueButId = xQueueCreate(32, sizeof(int));
     xQueueButId2 = xQueueCreate(32, sizeof(int));
 
